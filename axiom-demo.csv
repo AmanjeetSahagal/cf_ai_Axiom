@@ -1,0 +1,7 @@
+question,context,expected_output,category
+What is Axiom?,Axiom is an LLM evaluation platform for running prompt and model experiments against structured datasets.,Axiom is an LLM evaluation platform for running prompt and model experiments against structured datasets.,product
+How do users compare runs?,Users can compare two runs by score delta latency delta cost delta and category breakdown.,Users can compare two runs by score delta latency delta cost delta and category breakdown.,comparison
+What does the dashboard show?,The dashboard shows average score pass rate hallucination rate average latency and total cost.,The dashboard shows average score pass rate hallucination rate average latency and total cost.,dashboard
+How are prompts structured?,Each prompt template includes a system prompt and a user template with variables like {{question}}.,Each prompt template includes a system prompt and a user template with variables like {{question}}.,prompts
+What happens during an evaluation run?,The system renders the prompt calls the model stores the output and computes evaluator scores.,The system renders the prompt calls the model stores the output and computes evaluator scores.,pipeline
+How are failed rows handled?,Failed rows are persisted with error messages so the run can complete partially instead of losing all progress.,Failed rows are persisted with error messages so the run can complete partially instead of losing all progress.,reliability

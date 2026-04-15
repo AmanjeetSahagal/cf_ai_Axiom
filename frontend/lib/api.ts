@@ -1,4 +1,4 @@
-import { AuthResponse, Comparison, Dataset, PromptTemplate, Run } from "@/lib/types";
+import { AuthResponse, Comparison, Dataset, DatasetUploadRow, PromptTemplate, Run } from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -37,11 +37,7 @@ export const api = {
     payload: {
       name: string;
       schema: Record<string, unknown>;
-      rows: Array<{
-        input: Record<string, unknown>;
-        expected_output?: string | null;
-        category?: string | null;
-      }>;
+      rows: DatasetUploadRow[];
     },
   ) =>
     request<Dataset>("/datasets", {

@@ -13,6 +13,12 @@ export type Dataset = {
   rows: DatasetRow[];
 };
 
+export type DatasetUploadRow = {
+  input: Record<string, unknown>;
+  expected_output?: string | null;
+  category?: string | null;
+};
+
 export type PromptTemplate = {
   id: string;
   name: string;
