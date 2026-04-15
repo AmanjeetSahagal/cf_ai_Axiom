@@ -6,6 +6,15 @@ import { ResultInspector } from "@/components/ResultInspector";
 import { api } from "@/lib/api";
 import { Run } from "@/lib/types";
 
+function getRunSummary(run: Run) {
+  const results = run.results || [];
+  const disagreements = results.filter((result) => new Set(result.scores.map((score) => score.passed)).size > 1).length;
+  const hallucinations = results.filter((result) =>
+    result.scores.some((score) => score.type === "judge" && Boolean(score.metadata?.hallucination)),
+  ).length;
+  return { disagreements, hallucinations };
+}
+
 export function RunDetailClient({ id }: { id: string }) {
   const [run, setRun] = useState<Run | null>(null);
   const [status, setStatus] = useState("Loading run...");
@@ -57,6 +66,8 @@ export function RunDetailClient({ id }: { id: string }) {
     return <div className="rounded-[28px] border border-black/5 bg-white/80 p-8 shadow-panel">{status}</div>;
   }
 
+  const summary = getRunSummary(run);
+
   return (
     <section className="space-y-6">
       <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
@@ -70,6 +81,20 @@ export function RunDetailClient({ id }: { id: string }) {
             className="h-full rounded-full bg-ember transition-all"
             style={{ width: `${run.total_rows ? (run.processed_rows / run.total_rows) * 100 : 0}%` }}
           />
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Completed Rows</p>
+            <p className="mt-2 font-display text-3xl">{run.processed_rows}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Disagreements</p>
+            <p className="mt-2 font-display text-3xl">{summary.disagreements}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Judge Hallucinations</p>
+            <p className="mt-2 font-display text-3xl">{summary.hallucinations}</p>
+          </div>
         </div>
         {status ? <p className="mt-3 text-sm text-slate-500">{status}</p> : null}
         {run.failed_rows > 0 ? (

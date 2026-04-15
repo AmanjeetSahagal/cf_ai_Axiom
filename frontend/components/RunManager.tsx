@@ -6,6 +6,21 @@ import { FormEvent, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Dataset, PromptTemplate, Run } from "@/lib/types";
 
+const modelOptions = [
+  { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", hint: "Fast default for batch evaluation runs." },
+  { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", hint: "Stronger reasoning with higher latency and cost." },
+];
+
+const evaluatorOptions = [
+  { value: "exact", label: "Exact Match", hint: "Strict normalized string equality." },
+  { value: "semantic", label: "Semantic Similarity", hint: "Embedding similarity against expected output." },
+  { value: "judge", label: "LLM Judge", hint: "Gemini judge for correctness and hallucination checks." },
+];
+
+function extractVariables(template: string) {
+  return Array.from(new Set(Array.from(template.matchAll(/\{\{(\w+)\}\}/g)).map((match) => match[1]))).sort();
+}
+
 export function RunManager() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
@@ -13,7 +28,14 @@ export function RunManager() {
   const [datasetId, setDatasetId] = useState("");
   const [promptId, setPromptId] = useState("");
   const [model, setModel] = useState("gemini-2.5-flash");
+  const [selectedEvaluators, setSelectedEvaluators] = useState<string[]>(["exact", "semantic", "judge"]);
   const [status, setStatus] = useState("Loading runs...");
+
+  const selectedDataset = datasets.find((dataset) => dataset.id === datasetId);
+  const selectedPrompt = prompts.find((prompt) => prompt.id === promptId);
+  const promptVariables = selectedPrompt ? extractVariables(selectedPrompt.user_template) : [];
+  const datasetFields = selectedDataset ? Object.keys(selectedDataset.schema || {}).sort() : [];
+  const missingVariables = promptVariables.filter((variable) => !datasetFields.includes(variable));
 
   async function load(options?: { silent?: boolean }) {
     const token = window.localStorage.getItem("axiom-token");
@@ -62,12 +84,24 @@ export function RunManager() {
       return;
     }
     try {
+      if (!datasetId || !promptId) {
+        setStatus("Choose a dataset and prompt before launching.");
+        return;
+      }
+      if (!selectedEvaluators.length) {
+        setStatus("Select at least one evaluator before launching.");
+        return;
+      }
+      if (missingVariables.length) {
+        setStatus(`Prompt variables missing from dataset schema: ${missingVariables.join(", ")}`);
+        return;
+      }
       setStatus("Launching run...");
       await api.createRun(token, {
         dataset_id: datasetId,
         prompt_template_id: promptId,
         model,
-        evaluators: ["exact", "semantic", "judge"],
+        evaluators: selectedEvaluators,
       });
       setStatus("Run queued.");
       await load({ silent: true });
@@ -109,7 +143,74 @@ export function RunManager() {
           <option value="">Select prompt</option>
           {prompts.map((prompt) => <option key={prompt.id} value={prompt.id}>{prompt.name} v{prompt.version}</option>)}
         </select>
-        <input className="rounded-2xl border border-slate-200 px-4 py-3 md:col-span-2" value={model} onChange={(e) => setModel(e.target.value)} />
+        <div className="rounded-2xl border border-slate-200 p-4 md:col-span-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Model</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {modelOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`rounded-2xl border p-4 ${model === option.value ? "border-ink bg-slate-50" : "border-slate-200 bg-white"}`}
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="model"
+                  value={option.value}
+                  checked={model === option.value}
+                  onChange={(e) => setModel(e.target.value)}
+                />
+                <p className="font-medium text-slate-900">{option.label}</p>
+                <p className="mt-1 text-sm text-slate-600">{option.hint}</p>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 p-4 md:col-span-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Evaluators</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            {evaluatorOptions.map((option) => (
+              <label
+                key={option.value}
+                className={`rounded-2xl border p-4 ${selectedEvaluators.includes(option.value) ? "border-ink bg-slate-50" : "border-slate-200 bg-white"}`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    className="mt-1"
+                    type="checkbox"
+                    checked={selectedEvaluators.includes(option.value)}
+                    onChange={(e) =>
+                      setSelectedEvaluators((current) =>
+                        e.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value),
+                      )
+                    }
+                  />
+                  <div>
+                    <p className="font-medium text-slate-900">{option.label}</p>
+                    <p className="mt-1 text-sm text-slate-600">{option.hint}</p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 p-4 md:col-span-2">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Launch Validation</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-900">Dataset Fields</p>
+              <p className="mt-2 text-sm text-slate-600">{datasetFields.length ? datasetFields.join(", ") : "Select a dataset to inspect schema fields."}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-900">Prompt Variables</p>
+              <p className="mt-2 text-sm text-slate-600">{promptVariables.length ? promptVariables.map((value) => `{{${value}}}`).join(", ") : "Select a prompt to inspect variables."}</p>
+            </div>
+          </div>
+          {missingVariables.length ? (
+            <p className="mt-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Missing dataset fields for prompt variables: {missingVariables.join(", ")}
+            </p>
+          ) : null}
+        </div>
         <button className="w-fit rounded-full bg-ink px-5 py-3 text-white" type="submit">Launch Run</button>
         <p className="md:col-span-2 text-sm text-slate-500">{status}</p>
       </form>
