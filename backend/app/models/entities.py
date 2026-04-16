@@ -20,6 +20,11 @@ class RunStatus(str, enum.Enum):
     failed = "failed"
 
 
+class RunType(str, enum.Enum):
+    generated = "generated"
+    imported = "imported"
+
+
 class ScoreType(str, enum.Enum):
     exact = "exact"
     semantic = "semantic"
@@ -63,6 +68,7 @@ class DatasetRow(Base):
     dataset_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), index=True)
     input: Mapped[dict] = mapped_column(JSON, default=dict)
     expected_output: Mapped[str | None] = mapped_column(Text, nullable=True)
+    model_output: Mapped[str | None] = mapped_column(Text, nullable=True)
     category: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
     dataset = relationship("Dataset", back_populates="rows")
@@ -89,10 +95,11 @@ class EvalRun(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=default_uuid)
     dataset_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("datasets.id"), index=True)
-    prompt_template_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("prompt_templates.id"), index=True
+    prompt_template_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("prompt_templates.id"), index=True, nullable=True
     )
     model: Mapped[str] = mapped_column(String(120))
+    run_type: Mapped[RunType] = mapped_column(Enum(RunType), default=RunType.generated)
     selected_evaluators: Mapped[list[str]] = mapped_column(JSON, default=default_evaluators)
     status: Mapped[RunStatus] = mapped_column(Enum(RunStatus), default=RunStatus.pending)
     avg_score: Mapped[float] = mapped_column(Float, default=0.0)

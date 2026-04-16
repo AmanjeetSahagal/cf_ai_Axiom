@@ -11,14 +11,13 @@ export default function HomePage() {
         Compare prompts, models, latency, and hallucination rates across structured datasets with async runs and row-level inspection.
       </p>
       <div className="mt-10 flex flex-wrap gap-4">
-        <Link href="/dashboard" className="rounded-full bg-ink px-6 py-3 text-white">
+        <Link href="/dashboard" className="btn-primary px-6">
           Open Dashboard
         </Link>
-        <Link href="/login" className="rounded-full border border-black/10 bg-white px-6 py-3 text-ink">
+        <Link href="/login" className="btn-secondary px-6">
           Login
         </Link>
       </div>
     </main>
   );
 }
-

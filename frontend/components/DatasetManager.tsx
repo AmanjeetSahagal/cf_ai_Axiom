@@ -155,6 +155,7 @@ export function DatasetManager() {
                     <th className="px-3 py-2 font-medium">Question</th>
                     <th className="px-3 py-2 font-medium">Context</th>
                     <th className="px-3 py-2 font-medium">Expected</th>
+                    <th className="px-3 py-2 font-medium">Model Output</th>
                     <th className="px-3 py-2 font-medium">Category</th>
                   </tr>
                 </thead>
@@ -164,6 +165,7 @@ export function DatasetManager() {
                       <td className="px-3 py-2">{String(row.input.question ?? "")}</td>
                       <td className="px-3 py-2">{String(row.input.context ?? "")}</td>
                       <td className="px-3 py-2">{row.expected_output ?? ""}</td>
+                      <td className="px-3 py-2">{row.model_output ?? ""}</td>
                       <td className="px-3 py-2">{row.category ?? ""}</td>
                     </tr>
                   ))}
@@ -172,7 +174,7 @@ export function DatasetManager() {
             </div>
           ) : null}
         </div>
-        <button className="w-fit rounded-full bg-ink px-5 py-3 text-white disabled:cursor-not-allowed disabled:bg-slate-300" type="submit" disabled={validationIssues.length > 0}>Save Dataset</button>
+        <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/80" type="submit" disabled={validationIssues.length > 0}>Save Dataset</button>
         <p className="text-sm text-slate-500">{status}</p>
       </form>
       <DatasetTable datasets={datasets} />

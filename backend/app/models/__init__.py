@@ -6,6 +6,7 @@ from app.models.entities import (
     EvaluatorScore,
     PromptTemplate,
     RunStatus,
+    RunType,
     ScoreType,
     User,
 )
@@ -18,7 +19,7 @@ __all__ = [
     "EvaluatorScore",
     "PromptTemplate",
     "RunStatus",
+    "RunType",
     "ScoreType",
     "User",
 ]
-

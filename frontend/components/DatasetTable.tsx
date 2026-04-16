@@ -8,6 +8,7 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
           <tr>
             <th className="px-4 py-3 font-medium">Dataset</th>
             <th className="px-4 py-3 font-medium">Rows</th>
+            <th className="px-4 py-3 font-medium">Imported Outputs</th>
             <th className="px-4 py-3 font-medium">Schema</th>
             <th className="px-4 py-3 font-medium">Created</th>
           </tr>
@@ -17,6 +18,7 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
             <tr key={dataset.id} className="border-t border-slate-100">
               <td className="px-4 py-3">{dataset.name}</td>
               <td className="px-4 py-3">{dataset.rows.length}</td>
+              <td className="px-4 py-3">{dataset.rows.filter((row) => row.model_output).length}</td>
               <td className="px-4 py-3 font-mono text-xs">{JSON.stringify(dataset.schema)}</td>
               <td className="px-4 py-3">{new Date(dataset.created_at).toLocaleDateString()}</td>
             </tr>
@@ -26,4 +28,3 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
     </div>
   );
 }
-

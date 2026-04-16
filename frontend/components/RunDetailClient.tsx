@@ -19,6 +19,28 @@ export function RunDetailClient({ id }: { id: string }) {
   const [run, setRun] = useState<Run | null>(null);
   const [status, setStatus] = useState("Loading run...");
 
+  async function exportResults(format: "json" | "csv", options?: { pretty?: boolean }) {
+    const token = window.localStorage.getItem("axiom-token");
+    if (!token) {
+      setStatus("Login required.");
+      return;
+    }
+    try {
+      const exportLabel = format === "json" && options?.pretty === false ? "compact JSON" : format.toUpperCase();
+      setStatus(`Preparing ${exportLabel} export...`);
+      const blob = await api.exportRun(token, id, format, options);
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `run-${id}${format === "json" && options?.pretty === false ? ".compact" : ""}.${format}`;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+      setStatus("");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : `Failed to export ${format}`);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -95,6 +117,17 @@ export function RunDetailClient({ id }: { id: string }) {
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Judge Hallucinations</p>
             <p className="mt-2 font-display text-3xl">{summary.hallucinations}</p>
           </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button className="btn-secondary text-sm" type="button" onClick={() => exportResults("json", { pretty: true })}>
+            Export JSON
+          </button>
+          <button className="btn-secondary text-sm" type="button" onClick={() => exportResults("json", { pretty: false })}>
+            Export Compact JSON
+          </button>
+          <button className="btn-secondary text-sm" type="button" onClick={() => exportResults("csv")}>
+            Export CSV
+          </button>
         </div>
         {status ? <p className="mt-3 text-sm text-slate-500">{status}</p> : null}
         {run.failed_rows > 0 ? (

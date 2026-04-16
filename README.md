@@ -66,7 +66,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-If Next.js dev mode starts serving stale chunk errors, run:
+Frontend dev now clears `.next` automatically before startup. The explicit clean command is still available:
 
 ```bash
 cd frontend
@@ -121,8 +121,11 @@ This repository includes:
 
 - JWT auth and user-scoped records
 - dataset, prompt, run, and compare APIs
+- generated and imported run modes
 - prompt rendering and Gemini-backed evaluation
 - Celery-based async run processing flow
 - a frontend shell for login, dashboard, datasets, prompts, runs, and compare
 
 Model calls are wrapped behind service boundaries so provider-specific logic can be hardened without changing route handlers.
+
+Imported runs can evaluate precomputed `model_output` values stored on dataset rows without calling Gemini for generation.

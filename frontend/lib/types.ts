@@ -2,6 +2,7 @@ export type DatasetRow = {
   id: string;
   input: Record<string, unknown>;
   expected_output?: string | null;
+  model_output?: string | null;
   category?: string | null;
 };
 
@@ -16,6 +17,7 @@ export type Dataset = {
 export type DatasetUploadRow = {
   input: Record<string, unknown>;
   expected_output?: string | null;
+  model_output?: string | null;
   category?: string | null;
 };
 
@@ -55,8 +57,10 @@ export type RunResult = {
 export type Run = {
   id: string;
   dataset_id: string;
-  prompt_template_id: string;
+  prompt_template_id?: string | null;
   model: string;
+  run_type: "generated" | "imported";
+  selected_evaluators: string[];
   status: string;
   avg_score: number;
   total_cost: number;

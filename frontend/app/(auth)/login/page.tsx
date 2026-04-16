@@ -39,7 +39,7 @@ export default function LoginPage() {
           Sign in with your Google account through Firebase Auth. Axiom will provision your local user record automatically.
         </p>
         <button
-          className="mt-8 w-full rounded-full bg-ink px-5 py-3 text-white"
+          className="btn-primary mt-8 w-full"
           type="button"
           onClick={onGoogleSignIn}
         >

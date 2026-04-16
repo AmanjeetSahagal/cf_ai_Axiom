@@ -6,8 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class RunCreate(BaseModel):
     dataset_id: UUID
-    prompt_template_id: UUID
+    prompt_template_id: UUID | None = None
     model: str
+    run_type: str = "generated"
     evaluators: list[str] = ["exact", "semantic", "judge"]
 
 
@@ -36,8 +37,9 @@ class ResultResponse(BaseModel):
 class RunResponse(BaseModel):
     id: UUID
     dataset_id: UUID
-    prompt_template_id: UUID
+    prompt_template_id: UUID | None
     model: str
+    run_type: str
     selected_evaluators: list[str]
     status: str
     avg_score: float

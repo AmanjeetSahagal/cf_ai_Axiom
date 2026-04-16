@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class DatasetRowCreate(BaseModel):
     input: dict[str, Any]
     expected_output: str | None = None
+    model_output: str | None = None
     category: str | None = None
 
 

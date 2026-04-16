@@ -74,7 +74,7 @@ export function PromptManager() {
             These placeholders must exist in your dataset schema for runs to render prompts correctly.
           </p>
         </div>
-        <button className="w-fit rounded-full bg-ink px-5 py-3 text-white" type="submit">Save Prompt</button>
+        <button className="btn-primary w-fit" type="submit">Save Prompt</button>
         <p className="text-sm text-slate-500">{status}</p>
       </form>
       {prompts[0] ? <PromptEditor systemPrompt={prompts[0].system_prompt} userTemplate={prompts[0].user_template} /> : null}

@@ -25,7 +25,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full border border-black/5 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-ember hover:text-ember"
+              className="btn-nav text-sm"
             >
               {item.label}
             </Link>
@@ -36,4 +36,3 @@ export function Shell({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

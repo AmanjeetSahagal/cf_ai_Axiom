@@ -18,6 +18,20 @@ function isHallucination(result: RunResult) {
   return Boolean(judge?.metadata && typeof judge.metadata.hallucination === "boolean" && judge.metadata.hallucination);
 }
 
+function getJudgeReason(score?: Score) {
+  if (!score) {
+    return null;
+  }
+  const reason = score.metadata?.reason;
+  return typeof reason === "string" ? reason : null;
+}
+
+function formatMetadata(score: Score) {
+  const hiddenKeys = new Set(["reason", "hallucination"]);
+  const filtered = Object.fromEntries(Object.entries(score.metadata || {}).filter(([key]) => !hiddenKeys.has(key)));
+  return Object.keys(filtered).length ? JSON.stringify(filtered) : "";
+}
+
 export function ResultInspector({ results }: { results: RunResult[] }) {
   const [filter, setFilter] = useState<"all" | "failed" | "disagreement" | "hallucination" | "low_score">("all");
 
@@ -54,7 +68,7 @@ export function ResultInspector({ results }: { results: RunResult[] }) {
               key={value}
               type="button"
               onClick={() => setFilter(value as typeof filter)}
-              className={`rounded-full px-4 py-2 text-sm font-medium ${filter === value ? "bg-ink text-white" : "bg-slate-100 text-slate-700"}`}
+              className={`${filter === value ? "btn-chip-active" : "btn-chip"} text-sm`}
             >
               {label}
             </button>
@@ -70,6 +84,7 @@ export function ResultInspector({ results }: { results: RunResult[] }) {
         const judge = getScore(result, "judge");
         const disagreement = hasDisagreement(result);
         const hallucination = isHallucination(result);
+        const judgeReason = getJudgeReason(judge);
 
         return (
         <article key={result.id} className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
@@ -109,12 +124,28 @@ export function ResultInspector({ results }: { results: RunResult[] }) {
               <pre className="mt-2 whitespace-pre-wrap rounded-2xl bg-slate-50 p-4 text-sm">{result.error_message || result.output}</pre>
             </div>
           </div>
+          {judge ? (
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Judge Reasoning</p>
+                <span className={`rounded-full px-2 py-1 text-xs ${judge.passed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                  {judge.passed ? "pass" : "fail"}
+                </span>
+                {typeof judge.metadata?.hallucination === "boolean" ? (
+                  <span className={`rounded-full px-2 py-1 text-xs ${judge.metadata.hallucination ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"}`}>
+                    {judge.metadata.hallucination ? "hallucination flagged" : "grounded"}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-3 text-sm text-slate-700">{judgeReason || "No judge reason provided."}</p>
+            </div>
+          ) : null}
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {result.scores.map((score) => (
               <div key={score.type} className="rounded-2xl border border-slate-100 bg-white p-4">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{score.type}</p>
                 <p className="mt-2 font-display text-3xl">{score.score.toFixed(2)}</p>
-                <p className="mt-2 text-sm text-slate-600 break-words">{JSON.stringify(score.metadata)}</p>
+                {formatMetadata(score) ? <p className="mt-2 text-sm text-slate-600 break-words">{formatMetadata(score)}</p> : null}
               </div>
             ))}
           </div>

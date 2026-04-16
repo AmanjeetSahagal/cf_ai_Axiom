@@ -56,12 +56,26 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   runs: (token: string) => request<Run[]>("/runs", { token }),
+  deleteRun: async (token: string, id: string) => {
+    const response = await fetch(`${API_URL}/runs/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request failed: ${response.status}`);
+    }
+  },
   createRun: (
     token: string,
     payload: {
       dataset_id: string;
-      prompt_template_id: string;
+      prompt_template_id?: string | null;
       model: string;
+      run_type?: "generated" | "imported";
       evaluators?: string[];
     },
   ) =>
@@ -71,6 +85,23 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   run: (token: string, id: string) => request<Run>(`/runs/${id}`, { token }),
+  exportRun: async (token: string, id: string, format: "json" | "csv", options?: { pretty?: boolean }) => {
+    const query = new URLSearchParams({ format });
+    if (format === "json") {
+      query.set("pretty", String(options?.pretty ?? true));
+    }
+    const response = await fetch(`${API_URL}/runs/${id}/export?${query.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request failed: ${response.status}`);
+    }
+    return response.blob();
+  },
   compare: (token: string, baseline_run_id: string, candidate_run_id: string) =>
     request<Comparison>("/compare", {
       method: "POST",

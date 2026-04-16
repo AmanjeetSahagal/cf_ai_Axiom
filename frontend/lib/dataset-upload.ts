@@ -63,6 +63,7 @@ export function normalizeDatasetRows(rows: DatasetUploadRow[]): DatasetUploadRow
         .filter(([, value]) => value !== null),
     ),
     expected_output: normalizeOptionalString(row.expected_output),
+    model_output: normalizeOptionalString(row.model_output),
     category: normalizeOptionalString(row.category),
   }));
 }
@@ -115,6 +116,10 @@ export function validateDatasetRows(rows: DatasetUploadRow[]): DatasetValidation
       issues.push({ row: rowNumber, field: "expected_output", message: "Expected output must be a string when provided." });
     }
 
+    if (row.model_output !== undefined && row.model_output !== null && typeof row.model_output !== "string") {
+      issues.push({ row: rowNumber, field: "model_output", message: "Model output must be a string when provided." });
+    }
+
     if (row.category !== undefined && row.category !== null && typeof row.category !== "string") {
       issues.push({ row: rowNumber, field: "category", message: "Category must be a string when provided." });
     }
@@ -132,10 +137,11 @@ export function parseCsvDataset(text: string): ParsedDataset {
   const rows = lines.slice(1).map((line) => {
     const values = parseCsvLine(line);
     const record = Object.fromEntries(headers.map((header, index) => [header, values[index] ?? ""]));
-    const { expected_output, category, ...input } = record;
+    const { expected_output, model_output, category, ...input } = record;
     return {
       input,
       expected_output: expected_output || null,
+      model_output: model_output || null,
       category: category || null,
     };
   });
@@ -153,10 +159,11 @@ export function parseJsonDataset(text: string): ParsedDataset {
       throw new Error("Each JSON row must be an object.");
     }
     const record = item as Record<string, unknown>;
-    const { expected_output, category, ...input } = record;
+    const { expected_output, model_output, category, ...input } = record;
     return {
       input,
       expected_output: typeof expected_output === "string" ? expected_output : null,
+      model_output: typeof model_output === "string" ? model_output : null,
       category: typeof category === "string" ? category : null,
     };
   });

@@ -32,3 +32,28 @@ a {
   text-decoration: none;
 }
 
+@layer components {
+  .btn-primary {
+    @apply rounded-full bg-ember px-5 py-3 font-medium text-white shadow-sm transition hover:bg-[#ad4122] focus:outline-none focus:ring-2 focus:ring-ember/30;
+  }
+
+  .btn-secondary {
+    @apply rounded-full border border-ember/20 bg-ember/10 px-4 py-2 font-medium text-ember transition hover:border-ember/30 hover:bg-ember/15 focus:outline-none focus:ring-2 focus:ring-ember/20;
+  }
+
+  .btn-danger {
+    @apply rounded-full border border-red-200 bg-red-50 px-3 py-1 font-medium text-red-700 transition hover:border-red-300 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-200;
+  }
+
+  .btn-chip {
+    @apply rounded-full border border-slate-200 bg-white px-4 py-2 font-medium text-slate-700 transition hover:border-ember/20 hover:bg-ember/5 hover:text-ember;
+  }
+
+  .btn-chip-active {
+    @apply rounded-full border border-ember/30 bg-ember px-4 py-2 font-medium text-white shadow-sm;
+  }
+
+  .btn-nav {
+    @apply rounded-full border border-ember/15 bg-white px-4 py-2 font-medium text-slate-700 transition hover:border-ember/30 hover:bg-ember/10 hover:text-ember;
+  }
+}

@@ -70,7 +70,7 @@ export function CompareClient() {
           <option value="">Select candidate run</option>
           {runs.map((run) => <option key={run.id} value={run.id}>{run.id.slice(0, 8)} · {run.model}</option>)}
         </select>
-        <button className="rounded-full bg-ink px-5 py-3 text-white" type="button" onClick={onCompare}>Compare</button>
+        <button className="btn-primary" type="button" onClick={onCompare}>Compare</button>
         <p className="md:col-span-3 text-sm text-slate-500">{status}</p>
       </section>
       {comparison ? (
@@ -86,7 +86,7 @@ export function CompareClient() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Baseline</p>
               <h3 className="mt-2 font-display text-2xl text-ink">{baselineRun?.model ?? "Unknown model"}</h3>
               <p className="mt-2 text-sm text-slate-600">Run {comparison.baseline_run_id.slice(0, 8)} · {baselineRun?.status ?? "unknown"}</p>
-              <Link className="mt-4 inline-block rounded-full border border-black/10 px-4 py-2 text-sm font-medium text-slate-700" href={`/runs/${comparison.baseline_run_id}`}>
+              <Link className="btn-secondary mt-4 inline-block text-sm" href={`/runs/${comparison.baseline_run_id}`}>
                 Open Baseline Run
               </Link>
             </div>
@@ -94,7 +94,7 @@ export function CompareClient() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Candidate</p>
               <h3 className="mt-2 font-display text-2xl text-ink">{candidateRun?.model ?? "Unknown model"}</h3>
               <p className="mt-2 text-sm text-slate-600">Run {comparison.candidate_run_id.slice(0, 8)} · {candidateRun?.status ?? "unknown"}</p>
-              <Link className="mt-4 inline-block rounded-full border border-black/10 px-4 py-2 text-sm font-medium text-slate-700" href={`/runs/${comparison.candidate_run_id}`}>
+              <Link className="btn-secondary mt-4 inline-block text-sm" href={`/runs/${comparison.candidate_run_id}`}>
                 Open Candidate Run
               </Link>
             </div>

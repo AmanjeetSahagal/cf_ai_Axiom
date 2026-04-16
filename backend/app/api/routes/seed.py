@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.db.session import get_db
-from app.models import Dataset, DatasetRow, PromptTemplate, User
+from app.models import Dataset, DatasetRow, PromptTemplate, RunType, User
 from app.schemas.dataset import DatasetResponse
 from app.schemas.prompt import PromptTemplateResponse
 from app.schemas.run import RunResponse
@@ -82,7 +82,7 @@ def seed_demo(
     db.refresh(dataset)
     db.refresh(prompt)
 
-    run = create_run(db, dataset.id, prompt.id, settings.gemini_model, ["exact", "semantic", "judge"])
+    run = create_run(db, dataset.id, prompt.id, settings.gemini_model, ["exact", "semantic", "judge"], run_type=RunType.generated)
     enqueue_run(str(run.id))
     return {
         "dataset": DatasetResponse.model_validate(dataset),

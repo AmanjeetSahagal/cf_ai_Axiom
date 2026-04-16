@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Dataset, DatasetRow, EvalResult, EvalRun, EvaluatorScore, PromptTemplate, RunStatus, ScoreType
+from app.models import Dataset, DatasetRow, EvalResult, EvalRun, EvaluatorScore, PromptTemplate, RunStatus, RunType, ScoreType
 from app.services.cost import estimate_cost
 from app.services.evaluators import exact_match, llm_judge, semantic_similarity
 from app.services.llm import call_model
@@ -30,17 +30,25 @@ def normalized_score_value(score_type: ScoreType, score: float) -> float:
     return score
 
 
-def create_run(db: Session, dataset_id: UUID, prompt_template_id: UUID, model: str, evaluators: list[str] | None = None) -> EvalRun:
+def create_run(
+    db: Session,
+    dataset_id: UUID,
+    prompt_template_id: UUID | None,
+    model: str,
+    evaluators: list[str] | None = None,
+    run_type: RunType = RunType.generated,
+) -> EvalRun:
     dataset = db.get(Dataset, dataset_id)
-    prompt = db.get(PromptTemplate, prompt_template_id)
-    if not dataset or not prompt:
+    prompt = db.get(PromptTemplate, prompt_template_id) if prompt_template_id else None
+    if not dataset or (run_type == RunType.generated and not prompt):
         raise ValueError("Dataset or prompt template not found")
     selected_evaluators = normalize_evaluators(evaluators)
 
     run = EvalRun(
         dataset_id=dataset.id,
-        prompt_template_id=prompt.id,
+        prompt_template_id=prompt.id if prompt else None,
         model=model,
+        run_type=run_type,
         selected_evaluators=[score_type.value for score_type in selected_evaluators],
         status=RunStatus.pending,
         total_rows=len(dataset.rows),
@@ -69,14 +77,23 @@ def process_run(db: Session, run_id: UUID) -> EvalRun:
 
     try:
         for row in run.dataset.rows:
-            rendered_user = render_template(run.prompt_template.user_template, row.input)
+            rendered_user = render_template(run.prompt_template.user_template, row.input) if run.prompt_template else ""
             try:
-                output, latency_ms, prompt_tokens, output_tokens = call_model(
-                    run.prompt_template.system_prompt,
-                    rendered_user,
-                    run.model,
-                )
-                total_tokens = prompt_tokens + output_tokens
+                if run.run_type == RunType.imported:
+                    if not row.model_output:
+                        raise ValueError("Imported run row is missing model_output")
+                    output = row.model_output
+                    latency_ms = 0
+                    prompt_tokens = 0
+                    output_tokens = 0
+                    total_tokens = 0
+                else:
+                    output, latency_ms, prompt_tokens, output_tokens = call_model(
+                        run.prompt_template.system_prompt,
+                        rendered_user,
+                        run.model,
+                    )
+                    total_tokens = prompt_tokens + output_tokens
                 result = EvalResult(
                     run_id=run.id,
                     dataset_row_id=row.id,
@@ -108,7 +125,8 @@ def process_run(db: Session, run_id: UUID) -> EvalRun:
 
                 row_avg = mean([normalized_score_value(score_type, evaluation.score) for score_type, evaluation in evaluations.items()])
                 score_totals.append(row_avg)
-                total_cost += estimate_cost(run.model, prompt_tokens, output_tokens)
+                if run.run_type == RunType.generated:
+                    total_cost += estimate_cost(run.model, prompt_tokens, output_tokens)
             except Exception as exc:
                 error_message = str(exc)
                 result = EvalResult(
