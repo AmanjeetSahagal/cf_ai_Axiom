@@ -78,7 +78,10 @@ def get_run(
     run = db.execute(
         select(EvalRun)
         .join(Dataset, Dataset.id == EvalRun.dataset_id)
-        .options(selectinload(EvalRun.results).selectinload(EvalResult.scores))
+        .options(
+            selectinload(EvalRun.results).selectinload(EvalResult.scores),
+            selectinload(EvalRun.results).selectinload(EvalResult.dataset_row),
+        )
         .where(EvalRun.id == run_id, Dataset.user_id == current_user.id)
     ).scalar_one_or_none()
     if not run:

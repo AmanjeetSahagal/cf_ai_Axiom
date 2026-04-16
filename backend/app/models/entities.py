@@ -154,6 +154,18 @@ class EvalResult(Base):
     dataset_row = relationship("DatasetRow", back_populates="results")
     scores = relationship("EvaluatorScore", back_populates="eval_result", cascade="all, delete-orphan")
 
+    @property
+    def input(self) -> dict:
+        return self.dataset_row.input if self.dataset_row else {}
+
+    @property
+    def expected_output(self) -> str | None:
+        return self.dataset_row.expected_output if self.dataset_row else None
+
+    @property
+    def category(self) -> str | None:
+        return self.dataset_row.category if self.dataset_row else None
+
 
 class EvaluatorScore(Base):
     __tablename__ = "evaluator_scores"

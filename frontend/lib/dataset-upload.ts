@@ -13,6 +13,25 @@ function inferSchema(rows: DatasetUploadRow[]): Record<string, unknown> {
   return Object.fromEntries(Array.from(keys).sort().map((key) => [key, "string"]));
 }
 
+export function getImportedProvider(row: DatasetUploadRow | Record<string, unknown> | null | undefined): string | null {
+  const input = row && "input" in row ? (row.input as Record<string, unknown> | undefined) : undefined;
+  const value = input?.provider;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+export function getImportedModelName(row: DatasetUploadRow | Record<string, unknown> | null | undefined): string | null {
+  const input = row && "input" in row ? (row.input as Record<string, unknown> | undefined) : undefined;
+  const candidate = input?.model_name ?? input?.model ?? input?.model_id;
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null;
+}
+
+export function datasetImportSummary(rows: DatasetUploadRow[]) {
+  const importedRows = rows.filter((row) => row.model_output).length;
+  const providerCount = new Set(rows.map((row) => getImportedProvider(row)).filter(Boolean)).size;
+  const modelCount = new Set(rows.map((row) => getImportedModelName(row)).filter(Boolean)).size;
+  return { importedRows, providerCount, modelCount };
+}
+
 function parseCsvLine(line: string): string[] {
   const values: string[] = [];
   let current = "";

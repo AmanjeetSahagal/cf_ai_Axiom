@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -24,6 +25,9 @@ class ScoreResponse(BaseModel):
 class ResultResponse(BaseModel):
     id: UUID
     dataset_row_id: UUID
+    input: dict[str, Any] | None = None
+    expected_output: str | None = None
+    category: str | None = None
     rendered_prompt: str
     output: str
     latency_ms: int

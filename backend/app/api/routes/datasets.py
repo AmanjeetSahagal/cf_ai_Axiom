@@ -25,6 +25,7 @@ def create_dataset(
                 dataset_id=dataset.id,
                 input=row.input,
                 expected_output=row.expected_output,
+                model_output=row.model_output,
                 category=row.category,
             )
         )

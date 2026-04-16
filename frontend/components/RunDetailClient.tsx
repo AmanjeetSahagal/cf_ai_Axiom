@@ -140,7 +140,7 @@ export function RunDetailClient({ id }: { id: string }) {
         ) : null}
       </div>
       {run.results?.length ? (
-        <ResultInspector results={run.results || []} />
+        <ResultInspector results={run.results || []} model={run.model} runType={run.run_type} />
       ) : (
         <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/80 p-8 text-slate-500 shadow-panel">
           {run.status === "pending" || run.status === "running"

@@ -4,7 +4,15 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 
 import { DatasetTable } from "@/components/DatasetTable";
 import { api } from "@/lib/api";
-import { normalizeDatasetRows, parseCsvDataset, parseJsonDataset, validateDatasetRows } from "@/lib/dataset-upload";
+import {
+  datasetImportSummary,
+  getImportedModelName,
+  getImportedProvider,
+  normalizeDatasetRows,
+  parseCsvDataset,
+  parseJsonDataset,
+  validateDatasetRows,
+} from "@/lib/dataset-upload";
 import { Dataset, DatasetUploadRow, DatasetValidationIssue } from "@/lib/types";
 
 const starterRows = [
@@ -27,6 +35,7 @@ export function DatasetManager() {
   const [validationIssues, setValidationIssues] = useState<DatasetValidationIssue[]>([]);
   const [loadedFileName, setLoadedFileName] = useState<string>("");
   const [status, setStatus] = useState("Loading datasets...");
+  const importSummary = datasetImportSummary(previewRows);
 
   async function loadDatasets() {
     const token = window.localStorage.getItem("axiom-token");
@@ -144,14 +153,40 @@ export function DatasetManager() {
             </ul>
           ) : null}
         </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Imported Outputs</p>
+            <p className="mt-2 font-display text-3xl text-ink">{importSummary.importedRows}</p>
+            <p className="mt-2 text-sm text-slate-600">
+              {importSummary.importedRows
+                ? "This dataset can launch imported runs immediately."
+                : "Add a model_output column to evaluate external outputs."}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Providers Found</p>
+            <p className="mt-2 font-display text-3xl text-ink">{importSummary.providerCount}</p>
+            <p className="mt-2 text-sm text-slate-600">Detected from optional `provider` input fields.</p>
+          </div>
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Models Found</p>
+            <p className="mt-2 font-display text-3xl text-ink">{importSummary.modelCount}</p>
+            <p className="mt-2 text-sm text-slate-600">Detected from `model_name`, `model`, or `model_id`.</p>
+          </div>
+        </div>
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Preview</p>
           <p className="mt-2 text-sm text-slate-600">{previewRows.length} rows ready for import</p>
+          <p className="mt-2 text-sm text-slate-500">
+            Imported runs recognize `model_output` plus optional `provider` and `model_name` columns.
+          </p>
           {previewRows.length ? (
             <div className="mt-3 overflow-hidden rounded-2xl border border-slate-100">
               <table className="min-w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
+                    <th className="px-3 py-2 font-medium">Provider</th>
+                    <th className="px-3 py-2 font-medium">Model</th>
                     <th className="px-3 py-2 font-medium">Question</th>
                     <th className="px-3 py-2 font-medium">Context</th>
                     <th className="px-3 py-2 font-medium">Expected</th>
@@ -162,6 +197,8 @@ export function DatasetManager() {
                 <tbody>
                   {previewRows.slice(0, 3).map((row, index) => (
                     <tr key={index} className="border-t border-slate-100 align-top">
+                      <td className="px-3 py-2">{getImportedProvider(row) ?? "—"}</td>
+                      <td className="px-3 py-2">{getImportedModelName(row) ?? "—"}</td>
                       <td className="px-3 py-2">{String(row.input.question ?? "")}</td>
                       <td className="px-3 py-2">{String(row.input.context ?? "")}</td>
                       <td className="px-3 py-2">{row.expected_output ?? ""}</td>

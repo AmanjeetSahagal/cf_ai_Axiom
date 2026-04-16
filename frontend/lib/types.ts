@@ -46,6 +46,9 @@ export type Score = {
 export type RunResult = {
   id: string;
   dataset_row_id: string;
+  input?: Record<string, unknown> | null;
+  expected_output?: string | null;
+  category?: string | null;
   rendered_prompt: string;
   output: string;
   latency_ms: number;
