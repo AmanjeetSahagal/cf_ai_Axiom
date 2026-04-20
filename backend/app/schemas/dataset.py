@@ -26,11 +26,23 @@ class DatasetRowResponse(DatasetRowCreate):
     model_config = {"from_attributes": True}
 
 
-class DatasetResponse(BaseModel):
+class DatasetSummaryResponse(BaseModel):
     id: UUID
     name: str
     schema: dict[str, Any]
     created_at: datetime
+    row_count: int
+    imported_output_count: int
+    provider_count: int | None = None
+    model_count: int | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class DatasetDetailResponse(DatasetSummaryResponse):
     rows: list[DatasetRowResponse]
+    page: int
+    page_size: int
+    total_pages: int
 
     model_config = {"from_attributes": True}

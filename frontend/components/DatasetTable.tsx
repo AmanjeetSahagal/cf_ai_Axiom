@@ -17,9 +17,9 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
         </thead>
         <tbody>
           {datasets.map((dataset) => {
-            const importedRows = dataset.rows.filter((row) => row.model_output).length;
-            const providers = new Set(dataset.rows.map((row) => getImportedProvider(row)).filter(Boolean));
-            const models = new Set(dataset.rows.map((row) => getImportedModelName(row)).filter(Boolean));
+            const importedRows = dataset.imported_output_count ?? dataset.rows?.filter((row) => row.model_output).length ?? 0;
+            const providers = new Set((dataset.rows || []).map((row) => getImportedProvider(row)).filter(Boolean));
+            const models = new Set((dataset.rows || []).map((row) => getImportedModelName(row)).filter(Boolean));
             return (
               <tr key={dataset.id} className="border-t border-slate-100">
                 <td className="px-4 py-3">
@@ -30,10 +30,14 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
                     </p>
                   </div>
                 </td>
-                <td className="px-4 py-3">{dataset.rows.length}</td>
+                <td className="px-4 py-3">{dataset.row_count ?? dataset.rows?.length ?? 0}</td>
                 <td className="px-4 py-3">{importedRows}</td>
                 <td className="px-4 py-3 text-sm text-slate-600">
-                  {providers.size || models.size ? `${providers.size} providers / ${models.size} models` : "—"}
+                  {typeof dataset.provider_count === "number" || typeof dataset.model_count === "number"
+                    ? `${dataset.provider_count ?? 0} providers / ${dataset.model_count ?? 0} models`
+                    : providers.size || models.size
+                      ? `${providers.size} providers / ${models.size} models`
+                      : "—"}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs">{JSON.stringify(dataset.schema)}</td>
                 <td className="px-4 py-3">{new Date(dataset.created_at).toLocaleDateString()}</td>

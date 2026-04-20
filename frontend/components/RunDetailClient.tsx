@@ -7,12 +7,10 @@ import { api } from "@/lib/api";
 import { Run } from "@/lib/types";
 
 function getRunSummary(run: Run) {
-  const results = run.results || [];
-  const disagreements = results.filter((result) => new Set(result.scores.map((score) => score.passed)).size > 1).length;
-  const hallucinations = results.filter((result) =>
-    result.scores.some((score) => score.type === "judge" && Boolean(score.metadata?.hallucination)),
-  ).length;
-  return { disagreements, hallucinations };
+  return {
+    disagreements: run.disagreement_count ?? 0,
+    hallucinations: run.hallucination_count ?? 0,
+  };
 }
 
 export function RunDetailClient({ id }: { id: string }) {
@@ -139,8 +137,13 @@ export function RunDetailClient({ id }: { id: string }) {
           <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{run.last_error}</p>
         ) : null}
       </div>
-      {run.results?.length ? (
-        <ResultInspector results={run.results || []} model={run.model} runType={run.run_type} />
+      {run.total_rows ? (
+        <ResultInspector
+          runId={run.id}
+          model={run.model}
+          runType={run.run_type}
+          refreshKey={`${run.status}-${run.processed_rows}-${run.failed_rows}`}
+        />
       ) : (
         <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/80 p-8 text-slate-500 shadow-panel">
           {run.status === "pending" || run.status === "running"

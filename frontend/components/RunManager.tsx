@@ -73,7 +73,9 @@ export function RunManager() {
   const selectedPrompt = prompts.find((prompt) => prompt.id === promptId);
   const promptVariables = selectedPrompt ? extractVariables(selectedPrompt.user_template) : [];
   const datasetFields = selectedDataset ? Object.keys(selectedDataset.schema || {}).sort() : [];
-  const hasImportedOutputs = Boolean(selectedDataset?.rows.some((row) => row.model_output));
+  const hasImportedOutputs = Boolean(
+    (selectedDataset?.imported_output_count ?? 0) > 0 || selectedDataset?.rows?.some((row) => row.model_output),
+  );
   const missingVariables = promptVariables.filter((variable) => !datasetFields.includes(variable));
   const selectedModel = allModels.find((option) => option.value === model);
   const selectedProviderStatus = providerStatuses.find(

@@ -11,7 +11,14 @@ export type Dataset = {
   name: string;
   schema: Record<string, unknown>;
   created_at: string;
-  rows: DatasetRow[];
+  row_count: number;
+  imported_output_count: number;
+  provider_count?: number | null;
+  model_count?: number | null;
+  rows?: DatasetRow[];
+  page?: number;
+  page_size?: number;
+  total_pages?: number;
 };
 
 export type DatasetUploadRow = {
@@ -57,6 +64,17 @@ export type RunResult = {
   scores: Score[];
 };
 
+export type RunResultPage = {
+  run_id: string;
+  items: RunResult[];
+  page: number;
+  page_size: number;
+  total: number;
+  overall_total: number;
+  total_pages: number;
+  available_categories: string[];
+};
+
 export type Run = {
   id: string;
   dataset_id: string;
@@ -71,8 +89,63 @@ export type Run = {
   total_rows: number;
   failed_rows: number;
   last_error?: string | null;
+  disagreement_count?: number;
+  hallucination_count?: number;
   created_at: string;
   results?: RunResult[];
+};
+
+export type DashboardBreakdownItem = {
+  name: string;
+  value: number;
+};
+
+export type DashboardModelBreakdownItem = {
+  model: string;
+  runs: number;
+  avg_score: number;
+  avg_failure_rate: number;
+  avg_latency: number;
+};
+
+export type DashboardProviderBreakdownItem = {
+  provider: string;
+  runs: number;
+  avg_score: number;
+  total_cost: number;
+};
+
+export type DashboardCategoryBreakdownItem = {
+  category: string;
+  rows: number;
+  runs: number;
+  avg_score: number;
+  failed: number;
+};
+
+export type DashboardMatchingRun = {
+  id: string;
+  model: string;
+  provider: string;
+  run_type: "generated" | "imported";
+  status: string;
+  avg_score: number;
+  avg_latency: number;
+  created_at: string;
+};
+
+export type DashboardData = {
+  avg_score: number;
+  total_cost: number;
+  avg_latency: number;
+  failure_rate: number;
+  pass_breakdown: DashboardBreakdownItem[];
+  model_breakdown: DashboardModelBreakdownItem[];
+  provider_breakdown: DashboardProviderBreakdownItem[];
+  run_type_breakdown: DashboardBreakdownItem[];
+  category_breakdown: DashboardCategoryBreakdownItem[];
+  matching_runs: DashboardMatchingRun[];
+  total_runs: number;
 };
 
 export type Comparison = {

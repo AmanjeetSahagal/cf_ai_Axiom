@@ -1,4 +1,14 @@
-import { AuthResponse, Comparison, Dataset, DatasetUploadRow, PromptTemplate, ProviderKeyStatus, Run } from "@/lib/types";
+import {
+  AuthResponse,
+  Comparison,
+  DashboardData,
+  Dataset,
+  DatasetUploadRow,
+  PromptTemplate,
+  ProviderKeyStatus,
+  Run,
+  RunResultPage,
+} from "@/lib/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -55,6 +65,16 @@ export const api = {
     }
   },
   datasets: (token: string) => request<Dataset[]>("/datasets", { token }),
+  dataset: (
+    token: string,
+    id: string,
+    options?: { page?: number; page_size?: number },
+  ) => {
+    const query = new URLSearchParams();
+    if (options?.page) query.set("page", String(options.page));
+    if (options?.page_size) query.set("page_size", String(options.page_size));
+    return request<Dataset>(`/datasets/${id}${query.toString() ? `?${query.toString()}` : ""}`, { token });
+  },
   createDataset: (
     token: string,
     payload: {
@@ -79,6 +99,24 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   runs: (token: string) => request<Run[]>("/runs", { token }),
+  dashboard: (
+    token: string,
+    options?: {
+      window_days?: number;
+      model?: string;
+      provider?: string;
+      run_type?: "generated" | "imported";
+      category?: string;
+    },
+  ) => {
+    const query = new URLSearchParams();
+    if (options?.window_days) query.set("window_days", String(options.window_days));
+    if (options?.model) query.set("model", options.model);
+    if (options?.provider) query.set("provider", options.provider);
+    if (options?.run_type) query.set("run_type", options.run_type);
+    if (options?.category) query.set("category", options.category);
+    return request<DashboardData>(`/runs/dashboard${query.toString() ? `?${query.toString()}` : ""}`, { token });
+  },
   deleteRun: async (token: string, id: string) => {
     const response = await fetch(`${API_URL}/runs/${id}`, {
       method: "DELETE",
@@ -107,7 +145,34 @@ export const api = {
       token,
       body: JSON.stringify(payload),
     }),
-  run: (token: string, id: string) => request<Run>(`/runs/${id}`, { token }),
+  run: (
+    token: string,
+    id: string,
+    options?: { include_results?: boolean },
+  ) => {
+    const query = new URLSearchParams();
+    if (options?.include_results) query.set("include_results", "true");
+    return request<Run>(`/runs/${id}${query.toString() ? `?${query.toString()}` : ""}`, { token });
+  },
+  runResults: (
+    token: string,
+    id: string,
+    options?: {
+      page?: number;
+      page_size?: number;
+      result_filter?: "all" | "failed" | "disagreement" | "hallucination" | "low_score";
+      category?: string;
+      search?: string;
+    },
+  ) => {
+    const query = new URLSearchParams();
+    if (options?.page) query.set("page", String(options.page));
+    if (options?.page_size) query.set("page_size", String(options.page_size));
+    if (options?.result_filter && options.result_filter !== "all") query.set("result_filter", options.result_filter);
+    if (options?.category && options.category !== "all") query.set("category", options.category);
+    if (options?.search?.trim()) query.set("search", options.search.trim());
+    return request<RunResultPage>(`/runs/${id}/results${query.toString() ? `?${query.toString()}` : ""}`, { token });
+  },
   exportRun: async (token: string, id: string, format: "json" | "csv", options?: { pretty?: boolean }) => {
     const query = new URLSearchParams({ format });
     if (format === "json") {

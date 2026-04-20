@@ -1,116 +1,121 @@
 import Link from "next/link";
 
-import { LogoMark } from "@/components/LogoMark";
+import { SiteHeader } from "@/components/SiteHeader";
+
+const proofPoints = [
+  { label: "Datasets", value: "Structured" },
+  { label: "Runs", value: "Repeatable" },
+  { label: "Scores", value: "Measured" },
+];
+
+const workflow = [
+  {
+    step: "01",
+    title: "Upload a dataset",
+    body: "Bring questions, context, expected answers, and optional imported outputs.",
+  },
+  {
+    step: "02",
+    title: "Launch a run",
+    body: "Evaluate a provider-backed model or score imported model traces.",
+  },
+  {
+    step: "03",
+    title: "Inspect the results",
+    body: "Compare quality, latency, cost, and row-level failures in one place.",
+  },
+];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen px-6 py-14 lg:px-10">
-      <section className="grid gap-8 lg:grid-cols-[1.15fr,0.85fr] lg:items-stretch">
-        <div className="flex flex-col justify-between rounded-[36px] border border-black/5 bg-white/80 p-8 shadow-panel backdrop-blur md:p-10">
-          <div>
-            <div className="flex items-center gap-4">
-              <LogoMark size="lg" />
-              <div>
-                <p className="text-sm uppercase tracking-[0.32em] text-ember">Axiom</p>
-                <p className="mt-2 font-display text-3xl text-ink">Evaluation OS</p>
-              </div>
-            </div>
-            <h1 className="mt-10 max-w-4xl font-display text-5xl leading-[1.02] text-ink md:text-6xl">
-              Turn prompt and model iteration into a measurable engineering loop.
+    <main className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-[-8rem] h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-ember/18 blur-3xl" />
+        <div className="absolute left-[18%] top-[18rem] h-[20rem] w-[20rem] rounded-full bg-[#0f4c3a]/10 blur-3xl" />
+        <div className="absolute right-[14%] top-[26rem] h-[18rem] w-[18rem] rounded-full bg-[#d4a72c]/10 blur-3xl" />
+        <div className="absolute inset-x-0 top-[28rem] h-[28rem] bg-gradient-to-b from-transparent via-white/25 to-transparent" />
+      </div>
+
+      <div className="relative px-4 pt-8 sm:px-6 lg:px-8">
+        <SiteHeader />
+      </div>
+
+      <section className="relative px-6 pb-16 pt-6 lg:px-10 lg:pb-24">
+        <div className="liquid-glass mx-auto w-full max-w-5xl rounded-[34px] px-6 py-12 lg:px-10 lg:py-16">
+          <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
+            <h1 className="max-w-5xl font-display text-5xl leading-[0.98] text-ink md:text-7xl">
+              Evaluate LLM systems with a cleaner engineering loop.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              Run datasets against model variants, score hallucinations and regressions, and compare quality, latency, and cost without falling back to spreadsheet guesswork.
+              Run structured datasets, inspect failures, and compare prompts, models, and imported outputs without falling back to manual QA.
             </p>
-          </div>
-          <div className="mt-10 flex flex-wrap gap-4">
-            <Link href="/dashboard" className="btn-primary px-7">
-              Open Dashboard
-            </Link>
-            <Link href="/login" className="btn-secondary px-7">
-              Continue with Google
-            </Link>
-          </div>
-        </div>
-
-        <div className="grid gap-6">
-          <div className="rounded-[36px] border border-ember/10 bg-[#17162a] p-8 text-white shadow-panel">
-            <p className="text-sm uppercase tracking-[0.28em] text-white/60">Workflow</p>
-            <div className="mt-8 grid gap-4">
-              {[
-                ["1", "Upload datasets", "Bring CSV or JSON evaluation sets with expected answers, categories, and imported outputs."],
-                ["2", "Launch runs", "Test generated or imported runs across Gemini, GPT, Claude, and future providers."],
-                ["3", "Inspect evidence", "Drill into row-level disagreements, judge reasoning, and category-level regressions."],
-              ].map(([step, title, body]) => (
-                <div key={step} className="grid grid-cols-[auto,1fr] gap-4 rounded-[24px] border border-white/10 bg-white/5 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-ember font-semibold text-white">{step}</div>
-                  <div>
-                    <p className="font-semibold text-white">{title}</p>
-                    <p className="mt-1 text-sm leading-6 text-white/70">{body}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <Link href="/dashboard" className="btn-primary px-7 py-3.5">
+                Open Dashboard
+              </Link>
+              <Link href="/login" className="btn-secondary px-7 py-3.5">
+                Continue with Google
+              </Link>
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              ["Quality", "Exact, semantic, and judge scoring in one run."],
-              ["Speed", "Async workers keep the API responsive at scale."],
-              ["Cost", "Track tradeoffs by model, provider, and run type."],
-            ].map(([title, body]) => (
-              <div key={title} className="rounded-[28px] border border-black/5 bg-white/75 p-5 shadow-panel">
-                <p className="text-sm uppercase tracking-[0.22em] text-ember">{title}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{body}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
-      <section className="mt-8 grid gap-6 lg:grid-cols-[0.95fr,1.05fr]">
-        <div className="rounded-[36px] border border-black/5 bg-white/80 p-8 shadow-panel">
-          <p className="text-sm uppercase tracking-[0.28em] text-slate-500">What You Measure</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {[
-              ["Average score", "See whether a prompt or model is actually better."],
-              ["Hallucination rate", "Catch groundedness failures before they ship."],
-              ["Latency", "Understand the speed cost of higher-quality models."],
-              ["Run comparisons", "Baseline one run directly against another."],
-            ].map(([title, body]) => (
-              <div key={title} className="rounded-[24px] border border-slate-100 bg-slate-50 p-5">
-                <p className="font-semibold text-ink">{title}</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{body}</p>
-              </div>
-            ))}
+      <section className="relative px-6 py-10 lg:px-10">
+        <div className="mx-auto max-w-4xl rounded-[30px] bg-[linear-gradient(135deg,rgba(199,81,45,0.10),rgba(255,255,255,0.55),rgba(212,167,44,0.12))] px-8 py-8">
+          <div className="grid gap-6 sm:grid-cols-3">
+          {proofPoints.map((item) => (
+            <div key={item.label} className="text-center">
+              <p className="font-display text-3xl text-ink">{item.value}</p>
+              <p className="mt-2 text-sm uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+            </div>
+          ))}
           </div>
         </div>
+      </section>
 
-        <div className="rounded-[36px] border border-black/5 bg-white/80 p-8 shadow-panel">
-          <div className="grid gap-6 sm:grid-cols-3">
-            {[
-              ["500+", "Rows per run"],
-              ["Generated", "and imported modes"],
-              ["Multi-model", "dashboard breakdowns"],
-            ].map(([value, label]) => (
-              <div key={value} className="rounded-[24px] border border-ember/10 bg-[#fff8f4] p-5 text-center">
-                <p className="font-display text-4xl text-ember">{value}</p>
-                <p className="mt-3 text-sm uppercase tracking-[0.18em] text-slate-600">{label}</p>
+      <section className="px-6 py-16 lg:px-10 lg:py-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Workflow</p>
+          <h2 className="mt-4 font-display text-4xl leading-tight text-ink md:text-5xl">
+            A straightforward path from dataset to decision.
+          </h2>
+        </div>
+        <div className="mx-auto mt-12 flex max-w-3xl flex-col gap-6">
+          {workflow.map((item) => (
+            <div
+              key={item.step}
+              className={`mx-auto w-full max-w-2xl rounded-[28px] px-8 py-8 text-center ${
+                item.step === "01"
+                  ? "liquid-glass bg-[linear-gradient(180deg,rgba(255,255,255,0.56),rgba(255,244,238,0.34))]"
+                  : item.step === "02"
+                    ? "liquid-glass bg-[linear-gradient(180deg,rgba(255,255,255,0.52),rgba(229,244,239,0.30))]"
+                    : "liquid-glass bg-[linear-gradient(180deg,rgba(255,255,255,0.54),rgba(250,244,217,0.30))]"
+              }`}
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-ember text-sm font-semibold text-white shadow-sm">
+                {item.step}
               </div>
-            ))}
-          </div>
-          <div className="mt-8 rounded-[28px] border border-slate-100 bg-slate-50 p-6">
-            <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Built For Iteration</p>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
-              Axiom gives you datasets, prompts, runs, comparisons, judge reasoning, provider-backed generation, and imported-output evaluation in the same workflow.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/runs" className="btn-primary">
-                Launch a Run
-              </Link>
-              <Link href="/compare" className="btn-secondary">
-                Compare Runs
-              </Link>
+              <h3 className="mt-5 font-display text-3xl text-ink">{item.title}</h3>
+              <p className="mt-3 max-w-xl text-base leading-7 text-slate-600">{item.body}</p>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="px-6 pb-20 pt-6 lg:px-10 lg:pb-24">
+        <div className="liquid-glass mx-auto max-w-3xl rounded-[34px] bg-[linear-gradient(135deg,rgba(255,248,244,0.70),rgba(255,255,255,0.38),rgba(244,216,207,0.42))] px-8 py-12 text-center">
+          <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Start</p>
+          <h2 className="mt-4 font-display text-4xl leading-tight text-ink md:text-5xl">
+            Use Axiom to measure what changed before you ship it.
+          </h2>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/runs" className="btn-primary">
+              Launch a Run
+            </Link>
+            <Link href="/datasets" className="btn-secondary">
+              Upload a Dataset
+            </Link>
           </div>
         </div>
       </section>
