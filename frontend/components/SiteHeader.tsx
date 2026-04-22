@@ -7,6 +7,7 @@ import { LogoMark } from "@/components/LogoMark";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/copilot", label: "Copilot" },
   { href: "/datasets", label: "Datasets" },
   { href: "/prompts", label: "Prompts" },
   { href: "/runs", label: "Runs" },

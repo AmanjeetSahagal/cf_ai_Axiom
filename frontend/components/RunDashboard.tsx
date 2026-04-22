@@ -16,10 +16,39 @@ type DrilldownState = {
   category?: string;
 };
 
+function getScopeTitle(drilldown: DrilldownState) {
+  if (drilldown.model) return drilldown.model;
+  if (drilldown.provider) return `${drilldown.provider} models`;
+  if (drilldown.category) return `${drilldown.category} rows`;
+  if (drilldown.runType) return `${drilldown.runType} runs`;
+  return "All models";
+}
+
+function getScopeDescription(drilldown: DrilldownState) {
+  const parts = [
+    drilldown.model ? "specific model selected" : null,
+    drilldown.provider ? `provider ${drilldown.provider}` : null,
+    drilldown.runType ? `${drilldown.runType} runs only` : null,
+    drilldown.category ? `category ${drilldown.category}` : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" • ") : "No drilldown active. Click any model, provider, run type, or category below to focus the dashboard.";
+}
+
+function formatPercent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatDelta(current: number, baseline: number, suffix = "") {
+  const delta = current - baseline;
+  const sign = delta > 0 ? "+" : "";
+  return `${sign}${delta.toFixed(2)}${suffix}`;
+}
+
 export function RunDashboard() {
   const [windowDays, setWindowDays] = useState<"all" | "7" | "30">("all");
   const [drilldown, setDrilldown] = useState<DrilldownState>({});
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [baselineDashboard, setBaselineDashboard] = useState<DashboardData | null>(null);
   const [status, setStatus] = useState("Loading dashboard...");
 
   useEffect(() => {
@@ -34,15 +63,22 @@ export function RunDashboard() {
         return;
       }
       try {
-        const data = await api.dashboard(token, {
-          window_days: windowDays === "all" ? undefined : Number(windowDays),
-          model: drilldown.model,
-          provider: drilldown.provider,
-          run_type: drilldown.runType,
-          category: drilldown.category,
-        });
+        const window_days = windowDays === "all" ? undefined : Number(windowDays);
+        const [data, baseline] = await Promise.all([
+          api.dashboard(token, {
+            window_days,
+            model: drilldown.model,
+            provider: drilldown.provider,
+            run_type: drilldown.runType,
+            category: drilldown.category,
+          }),
+          api.dashboard(token, {
+            window_days,
+          }),
+        ]);
         if (!cancelled) {
           setDashboard(data);
+          setBaselineDashboard(baseline);
           setStatus(data.total_runs ? "" : "No runs yet. Seed demo data or launch one.");
         }
       } catch (error) {
@@ -79,11 +115,14 @@ export function RunDashboard() {
   if (!dashboard) {
     return <div className="rounded-[28px] border border-black/5 bg-white/80 p-8 shadow-panel">{status}</div>;
   }
+  const baseline = baselineDashboard ?? dashboard;
 
   const bestModel = dashboard.model_breakdown[0];
   const topProvider = dashboard.provider_breakdown[0];
   const totalStatusRuns = dashboard.pass_breakdown.reduce((sum, item) => sum + item.value, 0);
   const totalRunTypeRuns = dashboard.run_type_breakdown.reduce((sum, item) => sum + item.value, 0);
+  const scopeTitle = getScopeTitle(drilldown);
+  const scopeDescription = getScopeDescription(drilldown);
 
   return (
     <div className="space-y-6">
@@ -109,23 +148,122 @@ export function RunDashboard() {
           ))}
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Average Score" value={dashboard.avg_score.toFixed(2)} hint="Normalized across filtered runs" />
-        <MetricCard label="Run Pass Rate" value={`${Math.round(((dashboard.pass_breakdown[0]?.value ?? 0) / Math.max(dashboard.total_runs, 1)) * 100)}%`} hint={`${dashboard.total_runs} runs in view`} />
-        <MetricCard label="Average Latency" value={`${dashboard.avg_latency.toFixed(0)} ms`} />
-        <MetricCard label="Failure Rate" value={`${Math.round(dashboard.failure_rate * 100)}%`} hint={`Total cost $${dashboard.total_cost.toFixed(4)}`} />
+      <div className="rounded-[30px] border border-ember/15 bg-[#fff8f4] p-5 shadow-panel">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-ember/80">Current View</p>
+            <h3 className="mt-2 font-display text-3xl text-ink">{scopeTitle}</h3>
+            <p className="mt-2 text-sm text-slate-600">{scopeDescription}</p>
+          </div>
+          <div className="grid min-w-[220px] gap-2 sm:grid-cols-2">
+            <div className="rounded-2xl border border-ember/10 bg-white/80 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Runs In View</p>
+              <p className="mt-2 font-display text-3xl text-ink">{dashboard.total_runs}</p>
+            </div>
+            <div className="rounded-2xl border border-ember/10 bg-white/80 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Average Score</p>
+              <p className="mt-2 font-display text-3xl text-ink">{dashboard.avg_score.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {activeFilters.length ? activeFilters.map((filter) => (
+            <button
+              key={filter.key}
+              type="button"
+              className="btn-chip-active text-sm"
+              onClick={() => setDrilldown((current) => ({ ...current, [filter.key]: undefined }))}
+            >
+              {filter.label}
+            </button>
+          )) : (
+            <p className="text-sm text-slate-500">Showing the full dashboard.</p>
+          )}
+          {activeFilters.length ? (
+            <button type="button" className="btn-secondary text-sm" onClick={() => setDrilldown({})}>
+              Reset Dashboard View
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-[1.5fr,1fr]">
+        <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Current View Metrics</p>
+              <h3 className="mt-2 font-display text-2xl text-ink">
+                {activeFilters.length ? `Metrics for ${scopeTitle}` : "Metrics for all runs in the selected time window"}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500">
+                These top numbers are for the active dashboard slice, not a hidden average across unrelated models.
+              </p>
+            </div>
+            {activeFilters.length ? (
+              <div className="rounded-2xl border border-ember/10 bg-[#fff8f4] px-4 py-3 text-sm text-slate-600">
+                Comparing against all runs in the same time window
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              label="Current Score"
+              value={dashboard.avg_score.toFixed(2)}
+              hint={activeFilters.length ? `${formatDelta(dashboard.avg_score, baseline.avg_score)} vs all runs` : "Average score in current view"}
+            />
+            <MetricCard
+              label="Current Pass Rate"
+              value={formatPercent((dashboard.pass_breakdown[0]?.value ?? 0) / Math.max(dashboard.total_runs, 1))}
+              hint={activeFilters.length ? `${formatPercent((dashboard.pass_breakdown[0]?.value ?? 0) / Math.max(dashboard.total_runs, 1) - (baseline.pass_breakdown[0]?.value ?? 0) / Math.max(baseline.total_runs, 1))} vs all runs` : `${dashboard.total_runs} runs in view`}
+            />
+            <MetricCard
+              label="Current Latency"
+              value={`${dashboard.avg_latency.toFixed(0)} ms`}
+              hint={activeFilters.length ? `${formatDelta(dashboard.avg_latency, baseline.avg_latency, " ms")} vs all runs` : "Average latency in current view"}
+            />
+            <MetricCard
+              label="Current Failure"
+              value={formatPercent(dashboard.failure_rate)}
+              hint={activeFilters.length ? `${formatPercent(dashboard.failure_rate - baseline.failure_rate)} vs all runs` : `Total cost $${dashboard.total_cost.toFixed(4)}`}
+            />
+          </div>
+        </div>
+        <div className="rounded-[28px] border border-black/5 bg-slate-50/90 p-5 shadow-panel">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">All Runs Baseline</p>
+          <h3 className="mt-2 font-display text-2xl text-ink">Time-window benchmark</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            Use this as context, not the main decision metric. It blends every model and run in the selected time range.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">All Run Score</p>
+              <p className="mt-2 font-display text-3xl text-ink">{baseline.avg_score.toFixed(2)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">All Run Latency</p>
+              <p className="mt-2 font-display text-3xl text-ink">{baseline.avg_latency.toFixed(0)} ms</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">All Run Pass Rate</p>
+              <p className="mt-2 font-display text-3xl text-ink">{formatPercent((baseline.pass_breakdown[0]?.value ?? 0) / Math.max(baseline.total_runs, 1))}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">All Runs</p>
+              <p className="mt-2 font-display text-3xl text-ink">{baseline.total_runs}</p>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Top Model" value={bestModel?.model ?? "None"} hint={bestModel ? `Avg score ${bestModel.avg_score.toFixed(2)}` : "No runs yet"} />
-        <MetricCard label="Top Provider" value={topProvider?.provider ?? "None"} hint={topProvider ? `${topProvider.runs} runs in view` : "No runs yet"} />
-        <MetricCard label="Generated Runs" value={`${dashboard.run_type_breakdown.find((item) => item.name === "generated")?.value ?? 0}`} />
-        <MetricCard label="Imported Runs" value={`${dashboard.run_type_breakdown.find((item) => item.name === "imported")?.value ?? 0}`} />
+        <MetricCard label="Best Model In View" value={bestModel?.model ?? "None"} hint={bestModel ? `Avg score ${bestModel.avg_score.toFixed(2)}` : "No runs yet"} />
+        <MetricCard label="Top Provider In View" value={topProvider?.provider ?? "None"} hint={topProvider ? `${topProvider.runs} runs in view` : "No runs yet"} />
+        <MetricCard label="Generated In View" value={`${dashboard.run_type_breakdown.find((item) => item.name === "generated")?.value ?? 0}`} />
+        <MetricCard label="Imported In View" value={`${dashboard.run_type_breakdown.find((item) => item.name === "imported")?.value ?? 0}`} />
       </div>
       <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Drill Down</p>
-            <h3 className="mt-2 font-display text-2xl text-ink">Click a model, provider, run type, or category to focus the dashboard.</h3>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Dashboard Controls</p>
+            <h3 className="mt-2 font-display text-2xl text-ink">Choose what the rest of the dashboard is showing.</h3>
           </div>
           {activeFilters.length ? (
             <button type="button" className="btn-secondary text-sm" onClick={() => setDrilldown({})}>
@@ -151,6 +289,7 @@ export function RunDashboard() {
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
           <h3 className="font-display text-2xl">Model Score Breakdown</h3>
+          <p className="mt-2 text-sm text-slate-500">Pick a model to make it the primary dashboard focus.</p>
           <div className="mt-6 space-y-4">
             {dashboard.model_breakdown.length ? (
               dashboard.model_breakdown.slice(0, 8).map((entry) => (
@@ -158,7 +297,11 @@ export function RunDashboard() {
                   key={entry.model}
                   type="button"
                   onClick={() => setDrilldown((current) => ({ ...current, model: entry.model }))}
-                  className="block w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-ember/30 hover:bg-[#fff8f4]"
+                  className={`block w-full rounded-2xl border p-4 text-left transition ${
+                    drilldown.model === entry.model
+                      ? "border-ember bg-[#fff1e8] ring-2 ring-ember/15"
+                      : "border-slate-100 bg-slate-50 hover:border-ember/30 hover:bg-[#fff8f4]"
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
@@ -212,6 +355,7 @@ export function RunDashboard() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
           <h3 className="font-display text-2xl">Provider Breakdown</h3>
+          <p className="mt-2 text-sm text-slate-500">Use provider rows to swap the dashboard between OpenAI, Google, Anthropic, and others.</p>
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
@@ -226,7 +370,9 @@ export function RunDashboard() {
                 {dashboard.provider_breakdown.map((providerEntry) => (
                   <tr
                     key={providerEntry.provider}
-                    className="cursor-pointer border-t border-slate-100 hover:bg-[#fff8f4]"
+                    className={`cursor-pointer border-t border-slate-100 ${
+                      drilldown.provider === providerEntry.provider ? "bg-[#fff1e8]" : "hover:bg-[#fff8f4]"
+                    }`}
                     onClick={() => setDrilldown((current) => ({ ...current, provider: providerEntry.provider }))}
                   >
                     <td className="px-4 py-3 font-medium text-slate-800">{providerEntry.provider}</td>
@@ -241,6 +387,7 @@ export function RunDashboard() {
         </div>
         <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
           <h3 className="font-display text-2xl">Run Type Mix</h3>
+          <p className="mt-2 text-sm text-slate-500">Switch the whole dashboard between generated and imported runs.</p>
           <div className="mt-6 space-y-4">
             {dashboard.run_type_breakdown.length ? (
               dashboard.run_type_breakdown.map((entry, index) => {
@@ -250,7 +397,11 @@ export function RunDashboard() {
                     key={entry.name}
                     type="button"
                     onClick={() => setDrilldown((current) => ({ ...current, runType: entry.name as "generated" | "imported" }))}
-                    className="block w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left transition hover:border-ember/30 hover:bg-[#fff8f4]"
+                    className={`block w-full rounded-2xl border p-4 text-left transition ${
+                      drilldown.runType === entry.name
+                        ? "border-ember bg-[#fff1e8] ring-2 ring-ember/15"
+                        : "border-slate-100 bg-slate-50 hover:border-ember/30 hover:bg-[#fff8f4]"
+                    }`}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -281,6 +432,7 @@ export function RunDashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
           <h3 className="font-display text-2xl">Model Detail</h3>
+          <p className="mt-2 text-sm text-slate-500">This table mirrors the current dashboard view. The highlighted row is the model currently in focus.</p>
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
@@ -295,7 +447,9 @@ export function RunDashboard() {
                 {dashboard.model_breakdown.map((entry) => (
                   <tr
                     key={entry.model}
-                    className="cursor-pointer border-t border-slate-100 hover:bg-[#fff8f4]"
+                    className={`cursor-pointer border-t border-slate-100 ${
+                      drilldown.model === entry.model ? "bg-[#fff1e8]" : "hover:bg-[#fff8f4]"
+                    }`}
                     onClick={() => setDrilldown((current) => ({ ...current, model: entry.model }))}
                   >
                     <td className="px-4 py-3 font-medium text-slate-800">{entry.model}</td>
@@ -310,6 +464,7 @@ export function RunDashboard() {
         </div>
         <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
           <h3 className="font-display text-2xl">Category Breakdown</h3>
+          <p className="mt-2 text-sm text-slate-500">Click a category to focus the full dashboard on that slice of evaluation rows.</p>
           <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
@@ -325,7 +480,9 @@ export function RunDashboard() {
                 {dashboard.category_breakdown.slice(0, 8).map((entry) => (
                   <tr
                     key={entry.category}
-                    className="cursor-pointer border-t border-slate-100 hover:bg-[#fff8f4]"
+                    className={`cursor-pointer border-t border-slate-100 ${
+                      drilldown.category === entry.category ? "bg-[#fff1e8]" : "hover:bg-[#fff8f4]"
+                    }`}
                     onClick={() => setDrilldown((current) => ({ ...current, category: entry.category }))}
                   >
                     <td className="px-4 py-3 font-medium text-slate-800">{entry.category}</td>
@@ -353,6 +510,7 @@ export function RunDashboard() {
           </div>
           <p className="text-sm text-slate-500">{dashboard.total_runs} run{dashboard.total_runs === 1 ? "" : "s"} in view</p>
         </div>
+        <p className="mt-3 text-sm text-slate-500">If you are unsure what you are looking at, check the <span className="font-medium text-ink">Current View</span> band above. It always shows the active model, provider, run type, or category.</p>
         <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-slate-50 text-slate-600">

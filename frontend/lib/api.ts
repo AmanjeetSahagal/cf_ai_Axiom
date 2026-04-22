@@ -10,7 +10,7 @@ import {
   RunResultPage,
 } from "@/lib/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
 
 type RequestOptions = RequestInit & {
   token?: string | null;

@@ -28,6 +28,10 @@ const starterRows = [
 
 export function DatasetManager() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
+  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
+  const [datasetPage, setDatasetPage] = useState(1);
+  const [datasetBrowserStatus, setDatasetBrowserStatus] = useState("");
   const [name, setName] = useState("Starter Dataset");
   const [schema, setSchema] = useState('{"question":"string","context":"string"}');
   const [rows, setRows] = useState(JSON.stringify(starterRows, null, 2));
@@ -46,6 +50,10 @@ export function DatasetManager() {
     try {
       const data = await api.datasets(token);
       setDatasets(data);
+      const nextSelectedId = selectedDatasetId && data.some((dataset) => dataset.id === selectedDatasetId)
+        ? selectedDatasetId
+        : data[0]?.id ?? null;
+      setSelectedDatasetId(nextSelectedId);
       setStatus(data.length ? "" : "No datasets yet.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Failed to load datasets");
@@ -55,6 +63,47 @@ export function DatasetManager() {
   useEffect(() => {
     void loadDatasets();
   }, []);
+
+  useEffect(() => {
+    if (!selectedDatasetId) {
+      setSelectedDataset(null);
+      setDatasetBrowserStatus(datasets.length ? "Select a dataset to inspect its rows." : "No datasets yet.");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDatasetPage() {
+      const token = window.localStorage.getItem("axiom-token");
+      const datasetId = selectedDatasetId;
+      if (!token) {
+        if (!cancelled) {
+          setDatasetBrowserStatus("Login required.");
+        }
+        return;
+      }
+      if (!datasetId) {
+        return;
+      }
+      try {
+        setDatasetBrowserStatus("Loading dataset rows...");
+        const data = await api.dataset(token, datasetId, { page: datasetPage, page_size: 10 });
+        if (!cancelled) {
+          setSelectedDataset(data);
+          setDatasetBrowserStatus("");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setDatasetBrowserStatus(error instanceof Error ? error.message : "Failed to load dataset rows");
+        }
+      }
+    }
+
+    void loadDatasetPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDatasetId, datasetPage, datasets.length]);
 
   useEffect(() => {
     try {
@@ -113,6 +162,7 @@ export function DatasetManager() {
         rows: parsedRows,
       });
       setPreviewRows(parsedRows);
+      setDatasetPage(1);
       setStatus("Dataset created.");
       await loadDatasets();
     } catch (error) {
@@ -214,7 +264,113 @@ export function DatasetManager() {
         <button className="btn-primary w-fit disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white/80" type="submit" disabled={validationIssues.length > 0}>Save Dataset</button>
         <p className="text-sm text-slate-500">{status}</p>
       </form>
-      <DatasetTable datasets={datasets} />
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-sm uppercase tracking-[0.2em] text-slate-500">Dataset Browser</p>
+            <h3 className="mt-2 font-display text-3xl text-ink">Inspect stored datasets and page through their rows.</h3>
+          </div>
+          {selectedDataset ? (
+            <div className="rounded-2xl border border-slate-100 bg-white/80 px-4 py-3 text-sm text-slate-600 shadow-panel">
+              Showing page {selectedDataset.page ?? datasetPage} of {selectedDataset.total_pages ?? 1}
+            </div>
+          ) : null}
+        </div>
+        <DatasetTable
+          datasets={datasets}
+          selectedDatasetId={selectedDatasetId}
+          onSelect={(dataset) => {
+            setSelectedDatasetId(dataset.id);
+            setDatasetPage(1);
+          }}
+        />
+        <div className="rounded-[28px] border border-black/5 bg-white/80 p-5 shadow-panel">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Selected Dataset</p>
+              <h4 className="mt-2 font-display text-2xl text-ink">{selectedDataset?.name ?? "No dataset selected"}</h4>
+              <p className="mt-2 text-sm text-slate-600">
+                {selectedDataset
+                  ? `${selectedDataset.row_count} total rows • ${selectedDataset.imported_output_count} imported outputs`
+                  : "Choose a dataset above to inspect its rows."}
+              </p>
+            </div>
+            {selectedDataset ? (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={(selectedDataset.page ?? 1) <= 1}
+                  onClick={() => setDatasetPage((value) => Math.max(1, value - 1))}
+                >
+                  Previous Page
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={(selectedDataset.page ?? 1) >= (selectedDataset.total_pages ?? 1)}
+                  onClick={() => setDatasetPage((value) => Math.min(selectedDataset.total_pages ?? 1, value + 1))}
+                >
+                  Next Page
+                </button>
+              </div>
+            ) : null}
+          </div>
+          {selectedDataset ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Rows</p>
+                <p className="mt-2 font-display text-3xl text-ink">{selectedDataset.row_count}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Imported Outputs</p>
+                <p className="mt-2 font-display text-3xl text-ink">{selectedDataset.imported_output_count}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Schema</p>
+                <p className="mt-2 break-words font-mono text-xs text-slate-600">{JSON.stringify(selectedDataset.schema)}</p>
+              </div>
+            </div>
+          ) : null}
+          {datasetBrowserStatus ? <p className="mt-4 text-sm text-slate-500">{datasetBrowserStatus}</p> : null}
+          {selectedDataset?.rows?.length ? (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-100">
+              <table className="min-w-full text-left text-sm">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Provider</th>
+                    <th className="px-4 py-3 font-medium">Model</th>
+                    <th className="px-4 py-3 font-medium">Input</th>
+                    <th className="px-4 py-3 font-medium">Expected</th>
+                    <th className="px-4 py-3 font-medium">Model Output</th>
+                    <th className="px-4 py-3 font-medium">Category</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedDataset.rows.map((row) => (
+                    <tr key={row.id} className="border-t border-slate-100 align-top">
+                      <td className="px-4 py-3 text-slate-600">{getImportedProvider(row) ?? "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">{getImportedModelName(row) ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <pre className="whitespace-pre-wrap text-xs text-slate-700">
+                          {JSON.stringify(row.input, null, 2)}
+                        </pre>
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{row.expected_output ?? "—"}</td>
+                      <td className="px-4 py-3 text-slate-700">{row.model_output ?? "—"}</td>
+                      <td className="px-4 py-3 text-slate-600">{row.category ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : selectedDataset && !datasetBrowserStatus ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+              No rows found on this page.
+            </div>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

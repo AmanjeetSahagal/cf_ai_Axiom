@@ -13,3 +13,5 @@ build/
 *.pyc
 *.pyo
 *.sqlite3
+cloudflare/copilot/.dev.vars
+cloudflare/copilot/.wrangler/

@@ -1,7 +1,15 @@
 import { Dataset } from "@/lib/types";
 import { getImportedModelName, getImportedProvider } from "@/lib/dataset-upload";
 
-export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
+export function DatasetTable({
+  datasets,
+  selectedDatasetId,
+  onSelect,
+}: {
+  datasets: Dataset[];
+  selectedDatasetId?: string | null;
+  onSelect?: (dataset: Dataset) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-[28px] border border-black/5 bg-white/80 shadow-panel">
       <table className="min-w-full text-left text-sm">
@@ -21,7 +29,13 @@ export function DatasetTable({ datasets }: { datasets: Dataset[] }) {
             const providers = new Set((dataset.rows || []).map((row) => getImportedProvider(row)).filter(Boolean));
             const models = new Set((dataset.rows || []).map((row) => getImportedModelName(row)).filter(Boolean));
             return (
-              <tr key={dataset.id} className="border-t border-slate-100">
+              <tr
+                key={dataset.id}
+                className={`border-t border-slate-100 ${onSelect ? "cursor-pointer" : ""} ${
+                  selectedDatasetId === dataset.id ? "bg-[#fff1e8]" : onSelect ? "hover:bg-[#fff8f4]" : ""
+                }`}
+                onClick={() => onSelect?.(dataset)}
+              >
                 <td className="px-4 py-3">
                   <div>
                     <p className="font-medium text-slate-900">{dataset.name}</p>

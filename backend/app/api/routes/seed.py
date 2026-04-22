@@ -6,7 +6,7 @@ from app.api.deps import get_current_user
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import Dataset, DatasetRow, PromptTemplate, RunType, User
-from app.schemas.dataset import DatasetResponse
+from app.schemas.dataset import DatasetDetailResponse
 from app.schemas.prompt import PromptTemplateResponse
 from app.schemas.run import RunResponse
 from app.services.run_service import create_run
@@ -81,11 +81,25 @@ def seed_demo(
     db.commit()
     db.refresh(dataset)
     db.refresh(prompt)
+    dataset_rows = db.execute(
+        select(DatasetRow).where(DatasetRow.dataset_id == dataset.id).order_by(DatasetRow.id)
+    ).scalars().all()
 
     run = create_run(db, dataset.id, prompt.id, settings.gemini_model, ["exact", "semantic", "judge"], run_type=RunType.generated)
     enqueue_run(str(run.id))
     return {
-        "dataset": DatasetResponse.model_validate(dataset),
+        "dataset": DatasetDetailResponse(
+            id=dataset.id,
+            name=dataset.name,
+            schema=dataset.schema,
+            created_at=dataset.created_at,
+            row_count=len(dataset_rows),
+            imported_output_count=sum(1 for row in dataset_rows if row.model_output),
+            rows=dataset_rows,
+            page=1,
+            page_size=max(len(dataset_rows), 1),
+            total_pages=1,
+        ),
         "prompt": PromptTemplateResponse.model_validate(prompt),
         "run": RunResponse.model_validate(run),
     }

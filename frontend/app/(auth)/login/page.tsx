@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
@@ -10,24 +10,64 @@ import { getFirebaseAuthContext, hasFirebaseConfig } from "@/lib/firebase";
 
 export default function LoginPage() {
   const [status, setStatus] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  async function onGoogleSignIn() {
+  async function exchangeFirebaseSession() {
     if (!hasFirebaseConfig) {
       setStatus("Firebase env vars are missing in frontend/.env.local.");
       return;
     }
-    setStatus("Opening Google sign-in...");
+    const { auth } = getFirebaseAuthContext();
+    if (!auth.currentUser) {
+      return;
+    }
+    setStatus("Exchanging Firebase session with Axiom...");
     try {
-      const { auth, provider } = getFirebaseAuthContext();
-      const credential = await signInWithPopup(auth, provider);
-      const firebaseToken = await credential.user.getIdToken();
+      const firebaseToken = await auth.currentUser.getIdToken(true);
       const result = await api.googleLogin(firebaseToken);
       localStorage.setItem("axiom-token", result.access_token);
       setStatus("Authenticated with Google. Redirecting...");
       router.push("/dashboard");
+      router.refresh();
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? `Firebase signed in, but Axiom token exchange failed: ${error.message}`
+          : "Firebase signed in, but Axiom token exchange failed.",
+      );
+    }
+  }
+
+  useEffect(() => {
+    if (!hasFirebaseConfig) {
+      return;
+    }
+    const { auth } = getFirebaseAuthContext();
+    if (auth.currentUser) {
+      void exchangeFirebaseSession();
+    }
+  }, []);
+
+  async function onGoogleSignIn() {
+    if (isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      if (!hasFirebaseConfig) {
+        setStatus("Firebase env vars are missing in frontend/.env.local.");
+        return;
+      }
+      setStatus("Opening Google sign-in...");
+      const { auth, provider } = getFirebaseAuthContext();
+      const credential = await signInWithPopup(auth, provider);
+      setStatus(`Google sign-in succeeded for ${credential.user.email || "your account"}. Finalizing Axiom session...`);
+      await exchangeFirebaseSession();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Request failed");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -44,8 +84,9 @@ export default function LoginPage() {
           className="btn-primary mt-8 w-full"
           type="button"
           onClick={onGoogleSignIn}
+          disabled={isSubmitting}
         >
-          Sign in with Google
+          {isSubmitting ? "Signing In..." : "Sign in with Google"}
         </button>
         <p className="mt-4 text-sm text-slate-500">{status}</p>
       </section>

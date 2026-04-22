@@ -1,0 +1,22 @@
+name = "axiom-copilot"
+main = "src/index.ts"
+compatibility_date = "2026-04-21"
+
+[durable_objects]
+bindings = [
+  { name = "COPILOT_SESSION", class_name = "CopilotSession" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["CopilotSession"]
+
+[vars]
+CORS_ORIGIN = "http://localhost:3000"
+
+[ai]
+binding = "AI"
+
+# Secrets to set with `wrangler secret put`:
+# OPENAI_API_KEY
+# GEMINI_API_KEY
