@@ -25,6 +25,56 @@ For the Cloudflare AI assignment, this repository also includes a Cloudflare-bac
 - `cloudflare/copilot/` Cloudflare Worker + Durable Object chat copilot
 - `docker-compose.yml` local Postgres and Redis
 
+## Quick Start
+
+If you want to try the full product locally:
+
+1. Start infrastructure:
+
+```bash
+docker compose up -d postgres redis
+```
+
+2. Start the API:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+3. Start the Celery worker:
+
+```bash
+cd backend
+source .venv/bin/activate
+celery -A app.tasks.worker.celery_app worker --loglevel=info
+```
+
+4. Start the frontend:
+
+```bash
+cd frontend
+npm run dev
+```
+
+5. Start the Cloudflare copilot Worker:
+
+```bash
+cd cloudflare/copilot
+npm install
+npx wrangler dev
+```
+
+6. Open the product:
+
+- Landing page: `http://localhost:3000`
+- Login: `http://localhost:3000/login`
+- Dashboard: `http://localhost:3000/dashboard`
+- Copilot: `http://localhost:3000/copilot`
+- Backend docs: `http://127.0.0.1:8000/docs`
+
 ## Local Setup
 
 ### 1. Infrastructure
@@ -116,56 +166,6 @@ Optional Worker bindings/secrets:
 - `GEMINI_API_KEY`
 
 Workers AI is the default intended runtime for Copilot. External provider secrets are only fallback paths when you want to run the Worker against a non-Cloudflare model.
-
-## Quick Start
-
-If you want to try the full product locally:
-
-1. Start infrastructure:
-
-```bash
-docker compose up -d postgres redis
-```
-
-2. Start the API:
-
-```bash
-cd backend
-source .venv/bin/activate
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-3. Start the Celery worker:
-
-```bash
-cd backend
-source .venv/bin/activate
-celery -A app.tasks.worker.celery_app worker --loglevel=info
-```
-
-4. Start the frontend:
-
-```bash
-cd frontend
-npm run dev
-```
-
-5. Start the Cloudflare copilot Worker:
-
-```bash
-cd cloudflare/copilot
-npm install
-npx wrangler dev
-```
-
-6. Open the product:
-
-- Landing page: `http://localhost:3000`
-- Login: `http://localhost:3000/login`
-- Dashboard: `http://localhost:3000/dashboard`
-- Copilot: `http://localhost:3000/copilot`
-- Backend docs: `http://127.0.0.1:8000/docs`
 
 ## Reviewer Quick Start
 
