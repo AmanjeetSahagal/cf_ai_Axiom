@@ -370,11 +370,13 @@ export function CopilotClient() {
                       </button>
                       <button
                         type="button"
-                        className="shrink-0 rounded-full px-2 py-1 text-xs uppercase tracking-[0.18em] text-slate-400 transition hover:bg-white hover:text-rose-600"
+                        className="shrink-0 rounded-full px-2 py-1 text-sm leading-none text-slate-400 transition hover:bg-white hover:text-rose-600"
                         onClick={() => void deleteConversation(conversation.sessionId)}
                         disabled={deletingSessionId === conversation.sessionId}
+                        aria-label={`Delete chat ${conversation.title}`}
+                        title="Delete chat"
                       >
-                        {deletingSessionId === conversation.sessionId ? "..." : "Delete"}
+                        {deletingSessionId === conversation.sessionId ? "…" : "×"}
                       </button>
                     </div>
                   </div>

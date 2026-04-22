@@ -58,7 +58,7 @@ export function SiteHeader({ signedIn = false, onSignOut, isSigningOut = false }
               </Link>
             ) : null}
             <Link href="/login" className="btn-secondary text-sm">
-              {demoMode ? "Optional Login" : "Log In"}
+              Log In
             </Link>
           </>
         )}
